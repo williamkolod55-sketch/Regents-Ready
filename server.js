@@ -1,0 +1,105 @@
+import express from 'express';
+import { Pool } from 'pg';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import cors from 'cors';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'dist')));
+
+let pool = null;
+if (process.env.DATABASE_URL) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS quiz_scores (
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(50) NOT NULL,
+      score INTEGER NOT NULL,
+      total INTEGER NOT NULL,
+      accuracy DECIMAL(5,2) NOT NULL,
+      category VARCHAR(50) DEFAULT 'ALL',
+      mode VARCHAR(20) NOT NULL DEFAULT 'quiz',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `).then(() => {
+    console.log('Database ready');
+  }).catch(err => {
+    console.error('DB init error:', err.message);
+  });
+}
+
+app.post('/api/scores', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+
+  try {
+    const { username, score, total, accuracy, category, mode } = req.body;
+
+    if (!username || score == null || total == null || accuracy == null) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO quiz_scores (username, score, total, accuracy, category, mode)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        String(username).slice(0, 50),
+        parseInt(score),
+        parseInt(total),
+        parseFloat(accuracy),
+        String(category || 'ALL').slice(0, 50),
+        String(mode || 'quiz').slice(0, 20)
+      ]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Score save error:', err.message);
+    res.status(500).json({ error: 'Failed to save score' });
+  }
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+  if (!pool) return res.json([]);
+
+  try {
+    const { mode } = req.query;
+    let query = 'SELECT * FROM quiz_scores';
+    const params = [];
+
+    if (mode && mode !== 'all') {
+      query += ' WHERE mode = $1';
+      params.push(mode);
+    }
+
+    query += ' ORDER BY accuracy DESC, score DESC, created_at DESC LIMIT 20';
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Leaderboard error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', db: !!pool });
+});
+
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  res.sendFile(indexPath, err => {
+    if (err) res.status(404).send('Not found — run npm run build first');
+  });
+});
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Regents Ready running on port ${PORT}`);
+});
