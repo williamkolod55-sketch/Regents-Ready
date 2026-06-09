@@ -11,7 +11,6 @@ const LINKS = [
   { to: '/',            label: 'Home',        end: true,  icon: HomeIcon  },
   { to: '/flashcards',  label: 'Flashcards',  end: false, icon: CardsIcon },
   { to: '/quiz',        label: 'Quiz',        end: false, icon: QuizIcon  },
-  { to: '/lightning',   label: 'Lightning',   end: false, icon: BoltIcon  },
   { to: '/matching',    label: 'Matching',    end: false, icon: PuzzleIcon},
   { to: '/cram',        label: 'Cram Mode',   end: false, icon: FireIcon  },
   { to: '/leaderboard', label: 'Leaderboard', end: false, icon: TrophyIcon},
@@ -33,31 +32,31 @@ export default function SideNav() {
       style={{ background: 'rgba(8,8,16,0.97)', borderRight: '1px solid rgba(255,255,255,0.07)' }}
     >
       {/* Logo */}
-      <div className="px-5 pt-7 pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <h1 className="text-xl font-black tracking-tight text-white">Regents Ready</h1>
-        <p className="text-white/30 text-sm mt-0.5 font-medium">US History &amp; Gov</p>
+      <div className="px-5 pt-8 pb-6 text-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <h1 className="text-2xl font-bold tracking-tight text-white">Regents Ready</h1>
+        <p className="text-white/40 text-sm mt-1 font-medium">US History &amp; Government</p>
       </div>
 
       {/* Countdown */}
-      <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className={`text-5xl font-black tabular-nums leading-none ${urgent ? 'text-red-400' : 'text-white'}`}>
+      <div className="px-5 py-7 text-center" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className={`text-6xl font-black tabular-nums leading-none ${urgent ? 'text-red-400' : 'text-white'}`}>
           {daysLeft}
         </div>
-        <div className="text-white/35 text-sm mt-1 font-medium">
+        <div className="text-white/45 text-base mt-2 font-medium">
           {urgent ? '🚨 ' : ''}days until Regents
         </div>
-        <div className="text-white/20 text-[10px]">June 23, 2026</div>
+        <div className="text-white/25 text-xs mt-1">June 23, 2026</div>
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 pt-8 pb-4 flex flex-col gap-1 overflow-y-auto">
         {LINKS.map(({ to, label, end, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-3.5 rounded-xl text-[16px] font-semibold transition-all duration-150 ${
+              `flex items-center gap-3 px-4 py-4 rounded-xl text-lg font-semibold transition-all duration-150 ${
                 isActive
                   ? 'bg-white/10 text-white'
                   : 'text-white/40 hover:text-white/75 hover:bg-white/[0.06]'
@@ -77,11 +76,11 @@ export default function SideNav() {
       </nav>
 
       {/* Footer */}
-      <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div className="text-[10px] text-white/20 leading-relaxed">
-          SM-2 spaced repetition<br />Progress saved locally
-        </div>
+      <div className="px-5 py-5 text-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="text-white/20 text-xs">NYS Regents Exam</div>
+        <div className="text-white/15 text-xs mt-0.5">US History &amp; Gov · June 2026</div>
       </div>
+
     </aside>
   )
 }
@@ -104,13 +103,6 @@ function QuizIcon({ active }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke={active ? 'white' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-    </svg>
-  )
-}
-function BoltIcon({ active }) {
-  return (
-    <svg viewBox="0 0 24 24" fill={active ? 'white' : 'none'} stroke={active ? 'white' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
     </svg>
   )
 }

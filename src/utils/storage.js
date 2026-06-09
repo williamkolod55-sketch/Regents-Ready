@@ -21,6 +21,7 @@ export function getCardData(cardId) {
 }
 
 export function markGotIt(cardId) {
+  touchStreak()
   const data  = getSRData()
   const cur   = getCardData(cardId)
   const sm2   = calculateSM2(4, cur)
@@ -33,6 +34,7 @@ export function markGotIt(cardId) {
 }
 
 export function markNeedsReview(cardId) {
+  touchStreak()
   const data  = getSRData()
   const cur   = getCardData(cardId)
   const sm2   = calculateSM2(1, cur)

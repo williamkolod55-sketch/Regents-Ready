@@ -4,10 +4,8 @@ import { motion } from 'framer-motion'
 import { cards, CATEGORY_COLORS, CATEGORY_NAMES, CATEGORY_KEYS } from '../data/cards.js'
 import {
   getReadinessScore, getCategoryProgress, getDueCount,
-  getMostMissedCards, getNeedsReviewCards, getStreak, touchStreak, getMissCount
+  getMostMissedCards, getNeedsReviewCards, getStreak, getMissCount
 } from '../utils/storage.js'
-import ProgressRing from '../components/ProgressRing.jsx'
-
 const EXAM_DATE = new Date('2026-06-23T00:00:00')
 
 function getDaysLeft() {
@@ -33,7 +31,6 @@ function useAnimatedNumber(target, duration = 900) {
 const MODES = [
   { label: 'Flashcards',  icon: '📚', path: '/flashcards', desc: 'Flip & study',      color: '#F59E0B' },
   { label: 'Quiz',        icon: '❓', path: '/quiz',       desc: '4-choice test',     color: '#3B82F6' },
-  { label: 'Lightning',   icon: '⚡', path: '/lightning',  desc: '60-sec blitz',      color: '#EF4444' },
   { label: 'Matching',    icon: '🎯', path: '/matching',   desc: 'Match terms',       color: '#8B5CF6' },
   { label: 'Cram Mode',   icon: '🔥', path: '/cram',       desc: 'Review pile only',  color: '#F97316' },
   { label: 'Leaderboard', icon: '🏆', path: '/leaderboard',desc: 'Top scores',        color: '#06B6D4' },
@@ -48,6 +45,7 @@ export default function Home() {
   const [weakCards,   setWeakCards]   = useState([])
   const [cramCount,   setCramCount]   = useState(0)
   const [streak,      setStreak]      = useState(0)
+  const [isMobile,    setIsMobile]    = useState(() => window.innerWidth < 768)
 
   useEffect(() => {
     setReadiness(getReadinessScore(cards))
@@ -55,9 +53,15 @@ export default function Home() {
     setDueCount(getDueCount(cards))
     setWeakCards(getMostMissedCards(cards, 10))
     setCramCount(getNeedsReviewCards(cards).length)
-    setStreak(touchStreak())
+    setStreak(getStreak().count)
     const timer = setInterval(() => setDaysLeft(getDaysLeft()), 60000)
     return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
   const animReadiness = useAnimatedNumber(readiness)
@@ -70,14 +74,14 @@ export default function Home() {
   const circC          = 2 * Math.PI * circR
 
   return (
-    <div className="page-content min-h-screen px-4 lg:px-10 pt-8 lg:pt-10 pb-24 lg:pb-10">
+    <div className="page-content flex-1 flex flex-col px-4 lg:px-10 pt-4 lg:pt-6 pb-20 lg:pb-6">
 
       {/* ── Header ───────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45 }}
-        className="mb-6 lg:mb-8"
+        className="mb-3 lg:mb-4"
       >
         {/* On mobile: centered; on desktop: left-aligned (sidebar already has the title) */}
         <div className="text-center lg:hidden">
@@ -93,17 +97,17 @@ export default function Home() {
       </motion.div>
 
       {/* ── Desktop 2-column layout ───────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5 mb-5">
+      <div className={`flex-1 grid gap-4 mb-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-[1fr_380px]'}`}>
 
         {/* LEFT COLUMN */}
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3">
 
           {/* Countdown */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.08 }}
-            className="glass rounded-2xl p-5 relative overflow-hidden"
+            className="glass rounded-2xl p-4 relative overflow-hidden"
             style={daysUrgent ? { borderColor: 'rgba(239,68,68,0.35)' } : {}}
           >
             {daysUrgent && (
@@ -112,10 +116,10 @@ export default function Home() {
             )}
             <div className="flex items-center justify-between">
               <div>
-                <div className={`text-7xl lg:text-8xl font-black tabular-nums leading-none ${daysUrgent ? 'text-red-400' : 'text-white'}`}>
+                <div className={`text-6xl lg:text-7xl font-black tabular-nums leading-none ${daysUrgent ? 'text-red-400' : 'text-white'}`}>
                   {daysLeft}
                 </div>
-                <div className={`text-base font-semibold mt-2 ${daysUrgent ? 'text-red-400' : 'text-white/50'}`}>
+                <div className={`text-sm font-semibold mt-1 ${daysUrgent ? 'text-red-400' : 'text-white/50'}`}>
                   {daysUrgent ? '🚨 ' : ''}days until your Regents
                 </div>
                 <div className="text-white/25 text-xs mt-0.5">June 23, 2026</div>
@@ -149,9 +153,9 @@ export default function Home() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.14 }}
-            className="glass rounded-2xl p-5"
+            className="glass rounded-2xl p-4"
           >
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4">
               {/* Big ring */}
               <div className="relative flex-shrink-0" style={{ width: 80, height: 80 }}>
                 <svg viewBox="0 0 80 80" className="-rotate-90 w-20 h-20">
@@ -169,13 +173,13 @@ export default function Home() {
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-white/40 font-semibold uppercase tracking-wider">Exam Readiness</div>
-                <div className="text-5xl font-black mt-0.5">
+                <div className="text-sm font-bold text-white uppercase tracking-wider" style={{ borderLeft: '3px solid #10B981', paddingLeft: '10px' }}>Exam Readiness</div>
+                <div className="text-4xl font-black mt-0.5">
                   <span className="tabular-nums">{animReadiness}</span>
-                  <span className="text-white/35 text-xl">%</span>
+                  <span className="text-white/35 text-lg">%</span>
                 </div>
                 <div className="text-xs text-white/35 mt-1">
-                  {cards.length} total cards · progress saved locally
+                  {cards.length} total cards
                 </div>
                 <div className="mt-2 w-full h-1.5 rounded-full bg-white/10">
                   <div className="h-full rounded-full transition-all duration-1000"
@@ -190,64 +194,90 @@ export default function Home() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 lg:grid-cols-3 gap-3"
+            className="flex-1 flex flex-col gap-3 min-h-[240px] lg:min-h-[280px]"
           >
-            {MODES.map(({ label, icon, path, desc, color }) => (
-              <motion.button
-                key={path}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate(path)}
-                className="glass rounded-2xl p-4 text-left relative overflow-hidden group"
-                style={{ borderColor: color + '1a' }}
-              >
-                <div className="absolute top-0 right-0 w-14 h-14 rounded-full -translate-y-4 translate-x-4
-                  opacity-0 group-hover:opacity-10 transition-opacity duration-200"
-                  style={{ background: color }} />
-                <div className="text-2xl mb-2">{icon}</div>
-                <div className="font-bold text-base text-white">{label}</div>
-                <div className="text-sm text-white/35 mt-1">{desc}</div>
-              </motion.button>
-            ))}
+            {/* Row 1: Flashcards, Quiz, Matching — 3 equal columns */}
+            <div className="grid grid-cols-3 gap-3 flex-1">
+              {MODES.slice(0, 3).map(({ label, icon, path, desc, color }) => (
+                <motion.button
+                  key={path}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate(path)}
+                  className="glass rounded-2xl p-4 lg:p-5 text-left relative overflow-hidden group h-full flex flex-col justify-end min-h-[110px] lg:min-h-[140px]"
+                  style={{ borderColor: color + '1a' }}
+                >
+                  <div className="absolute top-0 right-0 w-14 h-14 rounded-full -translate-y-4 translate-x-4
+                    opacity-0 group-hover:opacity-10 transition-opacity duration-200"
+                    style={{ background: color }} />
+                  <div className="text-2xl lg:text-3xl mb-2">{icon}</div>
+                  <div className="font-bold text-sm lg:text-base text-white">{label}</div>
+                  <div className="text-xs lg:text-sm text-white/35 mt-0.5">{desc}</div>
+                </motion.button>
+              ))}
+            </div>
+            {/* Row 2: Cram Mode, Leaderboard — 2 equal columns */}
+            <div className="grid grid-cols-2 gap-3 flex-1">
+              {MODES.slice(3).map(({ label, icon, path, desc, color }) => (
+                <motion.button
+                  key={path}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate(path)}
+                  className="glass rounded-2xl p-4 lg:p-5 text-left relative overflow-hidden group h-full flex flex-col justify-end min-h-[110px] lg:min-h-[140px]"
+                  style={{ borderColor: color + '1a' }}
+                >
+                  <div className="absolute top-0 right-0 w-14 h-14 rounded-full -translate-y-4 translate-x-4
+                    opacity-0 group-hover:opacity-10 transition-opacity duration-200"
+                    style={{ background: color }} />
+                  <div className="text-2xl lg:text-3xl mb-2">{icon}</div>
+                  <div className="font-bold text-sm lg:text-base text-white">{label}</div>
+                  <div className="text-xs lg:text-sm text-white/35 mt-0.5">{desc}</div>
+                </motion.button>
+              ))}
+            </div>
           </motion.div>
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3">
 
-          {/* Category Progress Rings */}
+          {/* Category Progress */}
           <motion.div
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.18 }}
-            className="glass rounded-2xl p-5"
+            className="glass rounded-2xl p-5 flex flex-col flex-1"
           >
-            <div className="text-xs text-white/40 font-semibold uppercase tracking-wider mb-4">
+            <div className="text-sm font-bold text-white uppercase tracking-wider mb-3" style={{ borderLeft: '3px solid #60A5FA', paddingLeft: '10px' }}>
               Category Progress
             </div>
-            {/* Mobile: 4-col small; Desktop: 4-col bigger */}
-            <div className="grid grid-cols-4 gap-3 lg:gap-4">
+            <div className="flex flex-col justify-between flex-1">
               {CATEGORY_KEYS.map(cat => {
-                const prog = catProgress[cat] || { mastered: 0, total: 0 }
-                const pct  = prog.total > 0 ? Math.round((prog.mastered / prog.total) * 100) : 0
+                const prog  = catProgress[cat] || { mastered: 0, total: 0 }
+                const pct   = prog.total > 0 ? Math.round((prog.mastered / prog.total) * 100) : 0
+                const color = CATEGORY_COLORS[cat]
+                const r     = 10
+                const circ  = 2 * Math.PI * r
+                const offset = circ * (1 - pct / 100)
                 return (
                   <div
                     key={cat}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer group"
+                    className="flex items-center gap-3 cursor-pointer group"
                     onClick={() => navigate(`/flashcards?cat=${encodeURIComponent(cat)}`)}
                   >
-                    <div className="relative transition-transform duration-150 group-hover:scale-105">
-                      <ProgressRing
-                        progress={pct}
-                        color={CATEGORY_COLORS[cat]}
-                        size={60}
-                        strokeWidth={5}
-                      />
-                    </div>
-                    <span className="text-[10px] lg:text-xs text-white/40 text-center leading-tight font-medium px-0.5">
-                      {CATEGORY_NAMES[cat].split(' ')[0]}{' '}
-                      {CATEGORY_NAMES[cat].split(' ')[1]}
+                    <svg width="28" height="28" viewBox="0 0 28 28" className="-rotate-90 flex-shrink-0">
+                      <circle cx="14" cy="14" r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4"/>
+                      {pct > 0 && (
+                        <circle cx="14" cy="14" r={r} fill="none" stroke={color} strokeWidth="4"
+                          strokeDasharray={circ}
+                          strokeDashoffset={offset}
+                          strokeLinecap="round"
+                        />
+                      )}
+                    </svg>
+                    <span className="text-sm text-white font-medium flex-1 leading-tight group-hover:opacity-80 transition-opacity">
+                      {CATEGORY_NAMES[cat]}
                     </span>
-                    <span className="text-[9px] text-white/25">{prog.mastered}/{prog.total}</span>
+                    <span className="text-xs font-semibold tabular-nums flex-shrink-0" style={{ color }}>{pct}%</span>
                   </div>
                 )
               })}
@@ -260,12 +290,12 @@ export default function Home() {
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.26 }}
-              className="glass rounded-2xl p-5"
+              className="glass rounded-2xl p-4"
             >
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <div className="text-xs text-white/40 font-semibold uppercase tracking-wider">Weak Spots</div>
-                  <div className="text-sm text-white/60 mt-0.5">Most-missed terms</div>
+                  <div className="text-sm font-bold text-white uppercase tracking-wider" style={{ borderLeft: '3px solid #EF4444', paddingLeft: '10px' }}>Weak Spots</div>
+                  <div className="text-sm text-white/70 mt-0.5" style={{ paddingLeft: '13px' }}>Most-missed terms</div>
                 </div>
                 <motion.button
                   whileTap={{ scale: 0.95 }}
@@ -290,10 +320,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="text-center text-white/15 text-xs">
-        {cards.length} total cards · SM-2 spaced repetition
-      </div>
     </div>
   )
 }
