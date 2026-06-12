@@ -106,11 +106,12 @@ export default function Quiz() {
     localStorage.setItem('rr_username', username)
     const accuracy = Math.round((score / questions.length) * 100)
     try {
-      await fetch('/api/scores', {
+      const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), score, total: questions.length, accuracy, category: catFilter, mode: 'quiz' })
       })
+      if (!res.ok) throw new Error(`Server error ${res.status}`)
       setSubmitStatus('success')
       setSubmitted(true)
     } catch {
