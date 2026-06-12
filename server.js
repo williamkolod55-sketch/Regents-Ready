@@ -18,8 +18,11 @@ if (process.env.DATABASE_URL) {
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
   });
+}
 
-  pool.query(`
+const initDB = async () => {
+  if (!pool) return;
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS quiz_scores (
       id SERIAL PRIMARY KEY,
       username VARCHAR(50) NOT NULL,
@@ -30,12 +33,9 @@ if (process.env.DATABASE_URL) {
       mode VARCHAR(20) NOT NULL DEFAULT 'quiz',
       created_at TIMESTAMP DEFAULT NOW()
     )
-  `).then(() => {
-    console.log('Database ready');
-  }).catch(err => {
-    console.error('DB init error:', err.message);
-  });
-}
+  `);
+  console.log('Database initialized');
+};
 
 app.post('/api/scores', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
@@ -100,6 +100,11 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Regents Ready running on port ${PORT}`);
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Regents Ready running on port ${PORT}`);
+  });
+}).catch(err => {
+  console.error('DB init error:', err.message);
+  process.exit(1);
 });
