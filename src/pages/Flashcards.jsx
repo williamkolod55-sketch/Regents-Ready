@@ -93,6 +93,13 @@ export default function Flashcards() {
     setSessionMiss(0)
   }
 
+  const handleReshuffle = () => {
+    buildDeck(activeTab, modeFilter)
+    setStreak(0)
+    setSessionGot(0)
+    setSessionMiss(0)
+  }
+
   const total    = sessionGot + sessionMiss
   const accuracy = total > 0 ? Math.round((sessionGot / total) * 100) : 0
 
@@ -142,6 +149,16 @@ export default function Flashcards() {
               🔥 {streak}
             </div>
           )}
+          <button
+            onClick={handleReshuffle}
+            title="Reshuffle deck"
+            className="text-white/40 hover:text-white transition-colors p-1"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+            </svg>
+          </button>
         </div>
       </div>
 

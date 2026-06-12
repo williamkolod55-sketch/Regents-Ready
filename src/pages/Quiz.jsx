@@ -3,15 +3,25 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cards, CATEGORY_COLORS, CATEGORY_NAMES, CATEGORY_KEYS } from '../data/cards.js'
 import { markNeedsReview } from '../utils/storage.js'
+import { validateName, formatName } from '../utils/nameValidation.js'
 import CategoryBadge from '../components/CategoryBadge.jsx'
 
+const ERA_ORDER = ["FOUNDING", "CIVIL WAR ERA", "GILDED AGE", "PROG. ERA", "GREAT DEPRESSION", "WWII", "COLD WAR", "CIVIL RIGHTS", "MODERN ERA"]
+
 function buildQuestion(card, pool) {
-  const sameCat   = pool.filter(c => c.id !== card.id && c.cat === card.cat)
-  const otherCat  = pool.filter(c => c.id !== card.id && c.cat !== card.cat)
+  const eraIdx   = ERA_ORDER.indexOf(card.cat)
+  const adjacent = new Set([ERA_ORDER[eraIdx - 1], ERA_ORDER[eraIdx + 1]].filter(Boolean))
+
+  const sameCat  = pool.filter(c => c.id !== card.id && c.cat === card.cat)
+  const adjCat   = pool.filter(c => c.id !== card.id && adjacent.has(c.cat))
+  const otherCat = pool.filter(c => c.id !== card.id && c.cat !== card.cat && !adjacent.has(c.cat))
+
   const shuffledS = [...sameCat].sort(() => Math.random() - 0.5)
+  const shuffledA = [...adjCat].sort(() => Math.random() - 0.5)
   const shuffledO = [...otherCat].sort(() => Math.random() - 0.5)
-  const wrongs    = [...shuffledS, ...shuffledO].slice(0, 3)
-  const options   = [card, ...wrongs].sort(() => Math.random() - 0.5)
+
+  const wrongs  = [...shuffledS, ...shuffledA, ...shuffledO].slice(0, 3)
+  const options = [card, ...wrongs].sort(() => Math.random() - 0.5)
   return { card, options }
 }
 
@@ -37,6 +47,7 @@ export default function Quiz() {
   const [username,     setUsername]     = useState(() => localStorage.getItem('rr_username') || '')
   const [submitted,    setSubmitted]    = useState(false)
   const [submitStatus, setSubmitStatus] = useState(null)
+  const [nameError,    setNameError]    = useState(null)
   const timerRef = useRef(null) // kept for compatibility
 
   const filteredPool = catFilter === 'all' ? cards : cards.filter(c => c.cat === catFilter)
@@ -51,6 +62,8 @@ export default function Quiz() {
     setSelected(null)
     setIsCorrect(null)
     setSubmitted(false)
+    setSubmitStatus(null)
+    setNameError(null)
     setPhase('playing')
   }
 
@@ -102,14 +115,16 @@ export default function Quiz() {
   }, [selected, handleAdvance])
 
   const submitScore = async () => {
-    if (!username.trim()) return
-    localStorage.setItem('rr_username', username)
+    const { valid, error } = validateName(username)
+    if (!valid) { setNameError(error); return }
+    const formatted = formatName(username)
+    localStorage.setItem('rr_username', formatted)
     const accuracy = Math.round((score / questions.length) * 100)
     try {
       const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), score, total: questions.length, accuracy, category: catFilter, mode: 'quiz' })
+        body: JSON.stringify({ username: formatted, score, total: questions.length, accuracy, category: catFilter, mode: 'quiz' })
       })
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       setSubmitStatus('success')
@@ -222,24 +237,28 @@ export default function Quiz() {
             <input
               type="text"
               value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="Your display name..."
-              maxLength={30}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-white/25 mb-3"
+              onChange={e => { setUsername(e.target.value); setNameError(null) }}
+              placeholder="First Last (e.g. Jane Smith)"
+              maxLength={40}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-white/25 mb-1"
             />
+            {nameError && <p className="text-red-400 text-xs mb-2 px-1">{nameError}</p>}
             {submitStatus === 'success' ? (
-              <div className="text-center text-green-400 font-semibold py-2">✓ Score submitted!</div>
+              <div className="text-center text-green-400 font-semibold py-2 mt-1">✓ Score submitted!</div>
             ) : (
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={submitScore}
-                disabled={!username.trim() || submitted}
-                className="w-full py-3 rounded-xl font-bold text-sm transition-all"
-                style={username.trim()
-                  ? { background: 'rgba(59,130,246,0.2)', color: '#3B82F6', border: '1px solid rgba(59,130,246,0.3)' }
-                  : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }
-                }
-              >Submit Score</motion.button>
+              <>
+                {submitStatus === 'error' && <p className="text-red-400 text-xs mb-2 px-1">Failed to submit — try again</p>}
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={submitScore}
+                  disabled={submitted}
+                  className="w-full py-3 rounded-xl font-bold text-sm transition-all mt-1"
+                  style={username.trim()
+                    ? { background: 'rgba(59,130,246,0.2)', color: '#3B82F6', border: '1px solid rgba(59,130,246,0.3)' }
+                    : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }
+                  }
+                >Submit Score</motion.button>
+              </>
             )}
           </div>
 

@@ -12,6 +12,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
+function isValidName(name) {
+  const parts = name.trim().split(/\s+/)
+  return parts.length >= 2 && /^[a-zA-Z'\- ]+$/.test(name.trim())
+}
+
 let pool = null;
 if (process.env.DATABASE_URL) {
   pool = new Pool({
@@ -46,6 +51,9 @@ app.post('/api/scores', async (req, res) => {
     if (!username || score == null || total == null || accuracy == null) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+    if (!isValidName(username)) {
+      return res.status(400).json({ error: 'Full name required (letters only)' });
+    }
 
     const result = await pool.query(
       `INSERT INTO quiz_scores (username, score, total, accuracy, category, mode)
@@ -71,16 +79,23 @@ app.get('/api/leaderboard', async (req, res) => {
 
   try {
     const { mode } = req.query;
-    let query = 'SELECT * FROM quiz_scores';
     const params = [];
-
+    let whereClause = '';
     if (mode && mode !== 'all') {
-      query += ' WHERE mode = $1';
+      whereClause = 'WHERE mode = $1';
       params.push(mode);
     }
-
-    query += ' ORDER BY accuracy DESC, score DESC, created_at DESC LIMIT 20';
-    const result = await pool.query(query, params);
+    const result = await pool.query(
+      `SELECT * FROM (
+         SELECT DISTINCT ON (username) *
+         FROM quiz_scores
+         ${whereClause}
+         ORDER BY username, accuracy DESC, score DESC
+       ) best
+       ORDER BY accuracy DESC, score DESC
+       LIMIT 20`,
+      params
+    );
     res.json(result.rows);
   } catch (err) {
     console.error('Leaderboard error:', err.message);
