@@ -3,7 +3,7 @@ const PROFANITY = [
   'fuck', 'nigga', 'nigger', 'piss', 'pussy', 'retard', 'shit', 'slut', 'whore'
 ]
 
-const FORMAT_MSG = 'Use "First Last" format — e.g. "Will K" or "Will Smith"'
+const FORMAT_MSG = 'Use "First Last" format — e.g. "John S." or "Jane Doe"'
 
 export function validateName(name) {
   const trimmed = name.trim()

@@ -105,6 +105,7 @@ export default function Quiz() {
 
   useEffect(() => {
     const onKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (selected !== null && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault()
         handleAdvance()
