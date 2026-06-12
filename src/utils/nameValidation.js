@@ -3,12 +3,13 @@ const PROFANITY = [
   'fuck', 'nigga', 'nigger', 'piss', 'pussy', 'retard', 'shit', 'slut', 'whore'
 ]
 
+const FORMAT_MSG = 'Use "First Last" format — e.g. "Will K" or "Will Smith"'
+
 export function validateName(name) {
   const trimmed = name.trim()
-  if (!trimmed) return { valid: false, error: 'Name required' }
-  const parts = trimmed.split(/\s+/)
-  if (parts.length < 2) return { valid: false, error: 'Enter first and last name' }
-  if (!/^[a-zA-Z'\- ]+$/.test(trimmed)) return { valid: false, error: 'Letters only' }
+  if (trimmed.length < 2 || trimmed.length > 40) return { valid: false, error: FORMAT_MSG }
+  if (!/^[a-zA-Z'\-. ]+$/.test(trimmed)) return { valid: false, error: FORMAT_MSG }
+  if (!trimmed.includes(' ')) return { valid: false, error: FORMAT_MSG }
   const lower = trimmed.toLowerCase()
   for (const word of PROFANITY) {
     if (lower.split(/\s+/).some(w => w === word || w.startsWith(word + "'") || w.startsWith(word + '-'))) {
