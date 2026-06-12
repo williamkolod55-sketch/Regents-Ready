@@ -62,12 +62,10 @@ app.post('/api/scores', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (device_id) DO UPDATE SET
          username   = EXCLUDED.username,
-         score      = EXCLUDED.score,
-         total      = EXCLUDED.total,
-         accuracy   = EXCLUDED.accuracy,
-         category   = EXCLUDED.category,
-         created_at = EXCLUDED.created_at
-       WHERE EXCLUDED.accuracy >= quiz_scores.accuracy
+         score      = CASE WHEN EXCLUDED.accuracy >= quiz_scores.accuracy THEN EXCLUDED.score      ELSE quiz_scores.score      END,
+         total      = CASE WHEN EXCLUDED.accuracy >= quiz_scores.accuracy THEN EXCLUDED.total      ELSE quiz_scores.total      END,
+         accuracy   = CASE WHEN EXCLUDED.accuracy >= quiz_scores.accuracy THEN EXCLUDED.accuracy   ELSE quiz_scores.accuracy   END,
+         created_at = CASE WHEN EXCLUDED.accuracy >= quiz_scores.accuracy THEN EXCLUDED.created_at ELSE quiz_scores.created_at END
        RETURNING *`,
       [
         String(username).slice(0, 50),
