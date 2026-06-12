@@ -39,6 +39,8 @@ const initDB = async () => {
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
+  await pool.query(`ALTER TABLE quiz_scores ADD COLUMN IF NOT EXISTS device_id VARCHAR(64)`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_device_id ON quiz_scores(device_id)`);
   console.log('Database initialized');
 };
 
@@ -46,9 +48,9 @@ app.post('/api/scores', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
 
   try {
-    const { username, score, total, accuracy, category, mode } = req.body;
+    const { username, score, total, accuracy, category, mode, device_id } = req.body;
 
-    if (!username || score == null || total == null || accuracy == null) {
+    if (!username || score == null || total == null || accuracy == null || !device_id) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     if (!isValidName(username)) {
@@ -56,15 +58,25 @@ app.post('/api/scores', async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO quiz_scores (username, score, total, accuracy, category, mode)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      `INSERT INTO quiz_scores (username, score, total, accuracy, category, mode, device_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (device_id) DO UPDATE SET
+         username   = EXCLUDED.username,
+         score      = EXCLUDED.score,
+         total      = EXCLUDED.total,
+         accuracy   = EXCLUDED.accuracy,
+         category   = EXCLUDED.category,
+         created_at = EXCLUDED.created_at
+       WHERE EXCLUDED.accuracy >= quiz_scores.accuracy
+       RETURNING *`,
       [
         String(username).slice(0, 50),
         parseInt(score),
         parseInt(total),
         parseFloat(accuracy),
         String(category || 'ALL').slice(0, 50),
-        String(mode || 'quiz').slice(0, 20)
+        String(mode || 'quiz').slice(0, 20),
+        String(device_id).slice(0, 64)
       ]
     );
     res.json(result.rows[0]);

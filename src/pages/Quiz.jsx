@@ -34,6 +34,11 @@ const QUIZ_LENGTH = 20
 
 export default function Quiz() {
   const navigate = useNavigate()
+  const deviceId = (() => {
+    let id = localStorage.getItem('rr_device_id')
+    if (!id) { id = crypto.randomUUID(); localStorage.setItem('rr_device_id', id) }
+    return id
+  })()
   const [catFilter,    setCatFilter]    = useState('all')
   const [phase,        setPhase]        = useState('setup')  // setup | playing | results
   const [questions,    setQuestions]    = useState([])
@@ -125,7 +130,7 @@ export default function Quiz() {
       const res = await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: formatted, score, total: questions.length, accuracy, category: catFilter, mode: 'quiz' })
+        body: JSON.stringify({ username: formatted, score, total: questions.length, accuracy, category: catFilter, mode: 'quiz', device_id: deviceId })
       })
       if (!res.ok) throw new Error(`Server error ${res.status}`)
       setSubmitStatus('success')
