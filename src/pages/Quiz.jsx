@@ -6,28 +6,40 @@ import { markNeedsReview } from '../utils/storage.js'
 import { validateName, formatName } from '../utils/nameValidation.js'
 import CategoryBadge from '../components/CategoryBadge.jsx'
 
-const ERA_ORDER = ["FOUNDING", "CIVIL WAR ERA", "GILDED AGE", "PROG. ERA", "GREAT DEPRESSION", "WWII", "COLD WAR", "CIVIL RIGHTS", "MODERN ERA"]
+const ERA_GROUPS = {
+  "FOUNDING":         ["REV. ERA", "CIVIL WAR ERA"],
+  "REV. ERA":         ["FOUNDING", "CIVIL WAR ERA"],
+  "CIVIL WAR ERA":    ["FOUNDING", "REV. ERA", "GILDED AGE"],
+  "GILDED AGE":       ["CIVIL WAR ERA", "PROG. ERA"],
+  "PROG. ERA":        ["GILDED AGE", "GREAT DEPRESSION"],
+  "GREAT DEPRESSION": ["PROG. ERA", "WWII"],
+  "WWII":             ["GREAT DEPRESSION", "COLD WAR"],
+  "COLD WAR":         ["WWII", "KOREA/VIETNAM", "CIVIL RIGHTS"],
+  "KOREA/VIETNAM":    ["COLD WAR", "WWII", "CIVIL RIGHTS"],
+  "CIVIL RIGHTS":     ["COLD WAR", "KOREA/VIETNAM", "MODERN ERA"],
+  "MODERN ERA":       ["CIVIL RIGHTS", "COLD WAR"],
+}
 
-function buildQuestion(card, pool) {
-  const eraIdx   = ERA_ORDER.indexOf(card.cat)
-  const adjacent = new Set([ERA_ORDER[eraIdx - 1], ERA_ORDER[eraIdx + 1]].filter(Boolean))
+function buildQuestion(card) {
+  const allOthers = cards.filter(c => c.id !== card.id)
+  const sameCat   = [...allOthers.filter(c => c.cat === card.cat)].sort(() => Math.random() - 0.5)
 
-  const sameCat  = pool.filter(c => c.id !== card.id && c.cat === card.cat)
-  const adjCat   = pool.filter(c => c.id !== card.id && adjacent.has(c.cat))
-  const otherCat = pool.filter(c => c.id !== card.id && c.cat !== card.cat && !adjacent.has(c.cat))
+  if (sameCat.length >= 3) {
+    const options = [card, ...sameCat.slice(0, 3)].sort(() => Math.random() - 0.5)
+    return { card, options }
+  }
 
-  const shuffledS = [...sameCat].sort(() => Math.random() - 0.5)
-  const shuffledA = [...adjCat].sort(() => Math.random() - 0.5)
-  const shuffledO = [...otherCat].sort(() => Math.random() - 0.5)
-
-  const wrongs  = [...shuffledS, ...shuffledA, ...shuffledO].slice(0, 3)
+  const needed  = 3 - sameCat.length
+  const adjCats = ERA_GROUPS[card.cat] || []
+  const adjPool = [...allOthers.filter(c => adjCats.includes(c.cat))].sort(() => Math.random() - 0.5)
+  const wrongs  = [...sameCat, ...adjPool.slice(0, needed)]
   const options = [card, ...wrongs].sort(() => Math.random() - 0.5)
   return { card, options }
 }
 
 function buildQuiz(filteredCards, count = 20) {
   const shuffled = [...filteredCards].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, Math.min(count, shuffled.length)).map(card => buildQuestion(card, filteredCards))
+  return shuffled.slice(0, Math.min(count, shuffled.length)).map(card => buildQuestion(card))
 }
 
 const QUIZ_LENGTH = 20
